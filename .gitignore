@@ -131,6 +131,9 @@ dmypy.json
 # Excel
 ~$*
 
+# 日志
+/logs
+
 # 临时文件
 /temp
 /tmp
@@ -142,3 +145,6 @@ dmypy.json
 /resources/plugin/anti_captcha/*
 # 忽略 /resources/software/gost/* 下的所有文件
 /resources/software/gost/*
+
+# 为了开源临时注释配置文件，配置文件在项目根目录下
+config.toml

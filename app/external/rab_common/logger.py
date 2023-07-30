@@ -14,15 +14,17 @@ import logging
 from datetime import datetime
 # 涉及到路径问题的导入
 try:
-    from external.rab_coommon.config import config
+    from external.rab_common import config as external_rab_common_config
 except Exception as e:
-    from config import config
+    from config import external_rab_common_config
 
 
+# 日志相关配置
+LOG_CONFIG = external_rab_common_config.CONFIG["external"]["rab_common"]["logger"]
 # 日志格式
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 # 日志级别
-LOG_LEVEL_STR = config["log"]["level"]
+LOG_LEVEL_STR = LOG_CONFIG["level"]
 LOG_LEVEL = logging.INFO
 if LOG_LEVEL_STR == "DEBUG":
     LOG_LEVEL = logging.DEBUG
@@ -35,7 +37,7 @@ elif LOG_LEVEL_STR == "ERROR":
 elif LOG_LEVEL_STR == "CRITICAL":
     LOG_LEVEL = logging.CRITICAL
 # 日志文件夹路径
-LOG_DIR_PATH = "../" + config["log"]["dir_path"]
+LOG_DIR_PATH = LOG_CONFIG["dir_path"]
 # 如果日志文件夹不存在则创建
 if not os.path.exists(LOG_DIR_PATH):
     os.makedirs(LOG_DIR_PATH)
@@ -55,7 +57,7 @@ def get_logger():
     # 1. 日志文件名为当日日期，格式为：年-月-日.log
     log_file_name = datetime.now().strftime("%Y-%m-%d") + ".log"
     # 2. 日志文件路径为：日志文件夹路径 + 日志文件名
-    log_file_path = LOG_DIR_PATH + log_file_name
+    log_file_path = LOG_DIR_PATH + "/" + log_file_name
     # 3. 创建 logger
     logger = logging.getLogger(__name__)
     # 4. 设置日志级别
@@ -73,13 +75,13 @@ def get_logger():
 
 
 # 全局 logger
-logger = get_logger()
+LOGGER = get_logger()
 
 
 # 单体测试
 if __name__ == "__main__":
-    logger.debug("debug")
-    logger.info("info")
-    logger.warning("warning")
-    logger.error("error")
-    logger.critical("critical")
+    LOGGER.debug("debug")
+    LOGGER.info("info")
+    LOGGER.warning("warning")
+    LOGGER.error("error")
+    LOGGER.critical("critical")
