@@ -10,6 +10,7 @@
 
 
 import uuid
+import hashlib
 from enum import Enum
 from typing import Union
 from datetime import datetime
@@ -33,7 +34,7 @@ def _hash_password(password: str) -> str:
     password: 密码
     @return:
     """
-    return password
+    return hashlib.sha256(password.encode()).hexdigest()
     
 
 class User(ORM_BASE):
@@ -49,7 +50,8 @@ class User(ORM_BASE):
     username = Column(String(255), nullable=False, unique=True, comment="用户名")
     password = Column(String(255), nullable=False, comment="密码")
     hashed_password = Column(String(255), nullable=False, comment="加密后的密码")
-    disabled = Column(Boolean, nullable=False, default=False, comment="是否禁用")
+    is_disabled = Column(Boolean, nullable=False, default=False, comment="是否禁用")
+    is_admin = Column(Boolean, nullable=False, default=False, comment="是否管理员")
     # === 额外信息 ===
     nickname = Column(String(255), nullable=True, comment="昵称")
     # === 创建者和更新者信息 ===
@@ -60,13 +62,14 @@ class User(ORM_BASE):
     updated_by_name = Column(String(255), nullable=True, comment="更新者名称")
     updated_at = Column(DateTime, nullable=True, comment="更新时间")
 
-    def __init__(self, username: str, password: str, disabled: bool=False, nickname: str=None):
+    def __init__(self, username: str, password: str, is_disabled: bool=False, is_admin: bool=False, nickname: str=None):
         """
         @description: 初始化
         @param {type}
         username: 用户名
         password: 密码
-        disabled: 是否禁用
+        is_disabled: 是否禁用
+        is_admin: 是否管理员
         nickname: 昵称
         @return:
         """
@@ -74,19 +77,18 @@ class User(ORM_BASE):
         self.username = username
         self.password = password
         self.hashed_password = _hash_password(password)
-        self.disabled = disabled
+        self.is_disabled = is_disabled
+        self.is_admin = is_admin
         self.nickname = nickname
 
-    def init_admin():
+    @staticmethod
+    def init_config_admin():
         """
         @description: 初始化管理员
         @param {type}
         @return:
         """
-        self.id = uuid.uuid4().hex
-        self.username = FASTAPI_AUTH_USER_CONFIG["admin"]["username"]
-        self.password = FASTAPI_AUTH_USER_CONFIG["admin"]["password"]
-        self.hashed_password = _hash_password(self.password)
-        self.disabled = False
-        self.nickname = "超级管理员"
-        
+        config_admin_username = FASTAPI_AUTH_USER_CONFIG["admin"]["username"]
+        config_admin_password = FASTAPI_AUTH_USER_CONFIG["admin"]["password"]
+        admin = User(config_admin_username, config_admin_password, is_admin=True, nickname="管理员")
+        return admin
