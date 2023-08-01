@@ -9,19 +9,12 @@
 # @DESCRIPTION: 认证业务逻辑
 
 
-import jwt
 import hashlib
+from fastapi import HTTPException, status, Depends
 from external.rab_fastapi_auth.controller import auth as external_rab_fastapi_auth_controller_auth
 from external.rab_fastapi_auth.models.User import User
+from external.rab_fastapi_auth.business import token_biz
 
-
-# def decode_token(token: str):
-#     """
-#     @description: 解码令牌
-#     @param {str} token: 访问令牌
-#     @return {dict} 令牌信息
-#     """
-#     return external_rab_fastapi_auth_controller_auth.OAUTH2_SCHEME.__call__(token)
 
 def _verify_password(plain_password: str, hashed_password: str):
     """
@@ -49,14 +42,3 @@ async def do_login(username: str, password: str, session):
         )
     # 3. 返回用户
     return user
-
-async def get_current_user(token: str = external_rab_fastapi_auth_controller_auth.OAUTH2_SCHEME):
-    """
-    @description: 获取当前用户
-    @param {str} token: 访问令牌
-    @return {dict} 用户信息
-    """
-    # 1. 根据令牌解码
-    # token_info = decode_token(token)
-    # 2. 获取用户信息
-    pass

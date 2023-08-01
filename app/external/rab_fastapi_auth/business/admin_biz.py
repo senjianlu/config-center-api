@@ -10,7 +10,6 @@
 
 
 from external.rab_common import orm as external_rab_common_orm
-from external.rab_common import logger as external_rab_common_logger
 from external.rab_fastapi_auth.models.User import User
 
 
