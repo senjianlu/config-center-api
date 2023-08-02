@@ -62,7 +62,7 @@ class User(ORM_BASE):
     updated_by_name = Column(String(255), nullable=True, comment="更新者名称")
     updated_at = Column(DateTime, nullable=True, comment="更新时间")
 
-    def __init__(self, username: str, password: str, is_disabled: bool=False, is_admin: bool=False, nickname: str=None):
+    def __init__(self, id: str=None, username: str=None, password: str=None, is_disabled: bool=False, is_admin: bool=False, nickname: str=None):
         """
         @description: 初始化
         @param {type}
@@ -73,10 +73,10 @@ class User(ORM_BASE):
         nickname: 昵称
         @return:
         """
-        self.id = uuid.uuid4().hex
+        self.id = uuid.uuid4().hex if not id else id
         self.username = username
         self.password = password
-        self.hashed_password = _hash_password(password)
+        self.hashed_password = _hash_password(password) if password else None
         self.is_disabled = is_disabled
         self.is_admin = is_admin
         self.nickname = nickname
@@ -90,5 +90,5 @@ class User(ORM_BASE):
         """
         config_admin_username = FASTAPI_AUTH_USER_CONFIG["admin"]["username"]
         config_admin_password = FASTAPI_AUTH_USER_CONFIG["admin"]["password"]
-        admin = User(config_admin_username, config_admin_password, is_admin=True, nickname="管理员")
+        admin = User(None, config_admin_username, config_admin_password, is_admin=True, nickname="管理员")
         return admin

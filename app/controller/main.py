@@ -27,12 +27,11 @@ async def startup():
     @description: 启动时执行
     """
     # 1. 初始化 Redis
-    # APP.state.redis = await external_rab_common_redis.init_redis_async()
+    APP.state.redis = await external_rab_common_redis.init_redis_async()
     print("FastAPI - Redis 连接建立。")
     # 2. 建立数据库连接
     APP.state.session = external_rab_common_orm.init_db()
     print("FastAPI - 数据库连接建立。")
-
 
 @APP.on_event("shutdown")
 async def shutdown():
@@ -40,19 +39,21 @@ async def shutdown():
     @description: 关闭时执行
     """
     # 1. 关闭 Redis
-    # await APP.state.redis.close()
+    await APP.state.redis.close()
     print("FastAPI - Redis 连接关闭。")
     # 2. 关闭数据库连接
     APP.state.session.close()
     print("FastAPI - 数据库连接关闭。")
 
-
 @APP.get("/")
 async def root():
-    return {"message": "Hello World"}
+    """
+    @description: 根路由
+    """
+    return {"code": 200, "msg": "Config Center API."}
 
 
-# 路由
+# 外部路由
 APP.include_router(
     external_rab_fastapi_auth_controller_auth.ROUTER
 )

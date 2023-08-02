@@ -14,3 +14,9 @@
       # 管理员密码
       password = "admin"
 ```
+
+### 流程
+1. 通过 `/login` 接口登录，传入 `username` 和 `password`。
+  - 成功登录后，会返回 `token`。
+  - 登录失败的时候，抛出 
+2. 

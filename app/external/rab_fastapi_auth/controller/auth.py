@@ -16,6 +16,7 @@ from external.rab_fastapi_auth.business import admin_biz
 from external.rab_fastapi_auth.business import auth_biz
 from external.rab_fastapi_auth.business import token_biz
 from external.rab_fastapi_auth.models.User import User
+from external.rab_fastapi_auth.models.Error import UserNotFoundException, UsernameOrPasswordErrorException, TokenInvalidException, TokenExpiredException, TokenNotExistsException
 
 
 # FastAPI 认证路由相关配置
@@ -32,21 +33,33 @@ ROUTER = APIRouter(
 from external.rab_fastapi_auth.business import auth_biz
 
 
-async def _get_current_user(token: str = Depends(OAUTH2_SCHEME)):
+async def _get_current_user(request: Request, token: str = Depends(OAUTH2_SCHEME)):
     """
     @description: 获取当前用户
     @param {str} token: 访问令牌
     @return {dict} 用户信息
     """
     # 1. 根据令牌解码
-    decoded_token_info = token_biz.decode_token(token)
-    # 2. 获取用户信息
-    user = User(
-        id=decoded_token_info["id"],
-        username=decoded_token_info["username"]
-    )
-    # 3. 返回用户信息
-    return user
+    try:
+        decoded_token_info = token_biz.decode_token(token)
+    except jwt.exceptions.DecodeError:
+        raise TokenIllegalException()
+    except jwt.exceptions.ExpiredSignatureError:
+        raise TokenExpiredException()
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token 解码出现未知错误！")
+    # 2. 从 Redis 中获取用户信息
+    try:
+        user_info = await token_biz.get_user_info_from_redis(token, request.app.state.redis)
+    except TokenNotExistsException:
+        raise TokenNotExistsException()
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token 对应的数据解析出现未知错误！")
+    # 3. 对比用户信息
+    if decoded_token_info["id"] != user_info["id"] or decoded_token_info["sub"] != user_info["username"]:
+        raise TokenInvalidException()
+    return User(**user_info)
+
 
 @ROUTER.on_event("startup")
 async def startup():
@@ -57,19 +70,27 @@ async def startup():
 @ROUTER.post('/login')
 async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     # 1. 登录
-    current_user = await auth_biz.do_login(form_data.username, form_data.password, request.app.state.session)
+    try:
+        current_user = await auth_biz.do_login(form_data.username, form_data.password, request.app.state.session)
+    except UserNotFoundException:
+        raise UserNotFoundException
+    except UsernameOrPasswordErrorException:
+        raise UsernameOrPasswordErrorException
     # 2. 生成访问令牌
     access_token = token_biz.encode_token(current_user)
-    return {"code": 200, "msg": "登录成功", "data": {"access_token": access_token, "token_type": "bearer"}}
+    # 3. 将令牌存储到 Redis 中
+    access_token = await token_biz.save_token_to_redis(access_token, current_user, request.app.state.redis)
+    return {"code": 200, "msg": "登录成功", "data": {"token": access_token}, "access_token": access_token, "token_type": "bearer"}
 
 @ROUTER.get('/me')
 async def get_me(current_user: User = Depends(_get_current_user)):
-    return {"code": 200, "msg": "获取用户信息成功", "data": {*current_user.__dict__}}
+    return {"code": 200, "msg": "获取用户信息成功", "data": current_user}
 
 @ROUTER.get('/token')
-async def get_token():
-    return { "message": "we are adding numbers"}
+async def get_token(token: str = Depends(OAUTH2_SCHEME)):
+    return { "code": 200, "msg": "获取 Token 成功", "data": {"token": token}}
 
 @ROUTER.post('/logout')
-async def logout():
-    return { "message": "we are adding numbers"}
+async def logout(request: Request, token: str = Depends(OAUTH2_SCHEME)):
+    await auth_biz.do_logout(token, request.app.state.redis)
+    return {"code": 200, "msg": "登出成功", "data": {}}
