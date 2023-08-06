@@ -9,14 +9,15 @@
 # @DESCRIPTION: 认证控制器
 
 
-from fastapi import APIRouter, Depends, Request
+import jwt
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from external.rab_common import config as external_rab_common_config
 from external.rab_fastapi_auth.business import admin_biz
 from external.rab_fastapi_auth.business import auth_biz
 from external.rab_fastapi_auth.business import token_biz
 from external.rab_fastapi_auth.models.User import User
-from external.rab_fastapi_auth.models.Error import UserNotFoundException, UsernameOrPasswordErrorException, TokenInvalidException, TokenExpiredException, TokenNotExistsException
+from external.rab_fastapi_auth.models.Error import UserNotFoundException, UsernameOrPasswordErrorException, TokenInvalidException, TokenExpiredException, TokenNotExistsException, TokenIllegalException
 
 
 # FastAPI 认证路由相关配置
@@ -79,8 +80,8 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     # 2. 生成访问令牌
     access_token = token_biz.encode_token(current_user)
     # 3. 将令牌存储到 Redis 中
-    access_token = await token_biz.save_token_to_redis(access_token, current_user, request.app.state.redis)
-    return {"code": 200, "msg": "登录成功", "data": {"token": access_token}, "access_token": access_token, "token_type": "bearer"}
+    access_token, current_user_info = await token_biz.save_token_to_redis(access_token, current_user, request.app.state.redis)
+    return {"code": 200, "msg": "登录成功", "data": {"token": access_token, "user": current_user_info}, "access_token": access_token, "token_type": "bearer"}
 
 @ROUTER.get('/me')
 async def get_me(current_user: User = Depends(_get_current_user)):

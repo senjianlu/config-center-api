@@ -71,7 +71,7 @@ async def save_token_to_redis(access_token: str, current_user: User, redis):
     # 2. 将 Token 存储到 Redis 中
     await redis.set(access_token, json.dumps(current_user_info), ex=FASTAPI_AUTH_TOKEN_CONFIG["access_token_expire_seconds"])
     # 3. 返回
-    return access_token
+    return access_token, current_user_info
 
 async def get_user_info_from_redis(access_token: str, redis):
     """
